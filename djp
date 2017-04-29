@@ -1,0 +1,74 @@
+#!/usr/bin/python
+
+import os
+runSystem = os.system
+import re
+
+class Project(object):
+    def __init__(self):
+        self.mainFolderFlag = 1
+        self.projectName = ""
+        self.files       = []
+        self.directories = []
+        self.getProjectNameAndFileTree()
+        print self.directories
+
+    def getProjectNameAndFileTree(self):
+        # Get project name
+        curentFolderName = os.getcwd().split('/')
+        assert (len(curentFolderName) > 0)
+        self.projectName = curentFolderName[-1]
+
+        # Get files and directories
+        self.fileTree = os.listdir(os.getcwd())
+        for element in self.fileTree:
+
+            if os.path.isfile(element):
+                self.files.append(element)
+            elif os.path.isdir(element):
+                if element != self.projectName and element != ".git":
+                    self.directories.append(element)
+
+    def printAll(self):
+        print ("project name is %s. \n")%self.projectName
+        print ("There are following apps inside the project:")
+        print ("_____________________")
+        for i in self.directories:
+            print i
+
+    def refreshUrls(self):
+        assert len(self.directories) > 0
+
+        print "current folder is", os.getcwd()
+
+        if self.mainFolderFlag == 1:
+            self.mainFolderFlag == 0 
+            os.chdir(os.getcwd()+ "/" + self.projectName)
+            
+        runSystem("cp urls.py urls_bk.py")
+        
+        fs       = open("urls.py", "r")
+        urlLines = fs.readlines()
+        fs.close()
+
+        fs       = open("urls.py", "w")
+        
+        for i in urlLines:
+            if i[0:4] == "url(":
+                pass
+            elif i[0] == ']' or i[0] == ')':
+                for j_eachApp in self.directories:
+                    print j_eachApp
+                    fs.write("url(r\'^%s/', include('%s')),\n"%(j_eachApp, j_eachApp + ".urls"))
+                if i[0] == ']':
+                    print "]"
+                    fs.write(']')   
+                elif i[0] == ')':
+                    print ")"
+                    fs.write(')')   
+            else:
+                fs.write(i)
+        fs.close()        
+
+instanceOfProject = Project()
+#instanceOfProject.refreshUrls()

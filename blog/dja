@@ -1,0 +1,135 @@
+#!/usr/bin/python
+
+import os
+runSystem = os.system
+import re
+
+class App(object):
+    def __init__(self):
+        self.appName = ""
+        self.getAppName()
+        
+    def getAppName(self):
+        curentFolderName = os.getcwd().split('/')
+        assert (len(curentFolderName) > 0)
+        self.appName = curentFolderName[-1]
+
+    # This is try to initiate the function files of the new app.
+    # If the file of views.py or urls.py is not exist, then it try to create and write the basis of them.
+    @staticmethod
+    def dj_init():
+        runSystem("touch views.py")
+        
+        fs = open("views.py", "r")
+        lines = fs.readlines()
+        fs.close()
+
+        if len(lines) <= 3:
+            
+            print ("views.py has not been initiated", lines)
+            runSystem("echo 'from django.shortcuts  import render'> views.py")
+            runSystem("echo 'from django.http import HttpResponse\n'>> views.py")            
+            runSystem("sync")    
+              
+        runSystem("touch urls.py")
+        
+        fs = open("urls.py", "r")
+        lines = fs.readlines()
+        fs.close()
+        
+        if len(lines) < 5 or len(lines[0]) < 15:
+            
+            print ("urls.py has not been initiated", lines)
+
+            runSystem("echo 'from django.conf.urls import include, url'> urls.py")
+            runSystem("echo 'from . import views\n'>> urls.py")
+            runSystem("echo 'urlpatterns = [\n'>> urls.py")
+            runSystem("echo '#formark\n'>> urls.py")
+            runSystem("echo ']\n'>> urls.py")
+            runSystem("sync")
+
+    @staticmethod
+    def exampleFunction():
+        App.dj_init()
+        fs = open("views.py", "a")
+        fs.write("def index(request):\n")
+        tempStr = '    return HttpResponse("Hello, world.")\n'
+        fs.write(tempStr)
+        fs.close()
+
+        fs = open("urls.py", "r")
+        lines = fs.readlines()
+        fs.close()
+
+        runSystem("cp urls.py urls_bk.py")
+        fs = open("urls.py", "w")
+        for i in lines:
+            
+            # Get the mark line
+            print len(i) > 6 , i[0:6]
+            if len(i) > 6 and i[0:6] == "#forma":
+                print "marking "
+                fs.write("url(r'^$', views.index, name='index'),\n")
+                fs.write("#formark\n")
+            elif i[0] == ')' or i[0] == ']':
+                print "end"
+                fs.write("]")
+            else:
+                fs.write(i)
+        fs.close()
+
+    @staticmethod
+    def addFunction():
+        nameOfFunction  = raw_input('Name?')
+        returnedStrings = raw_input('String that you want to response?')
+
+        assert ( len(nameOfFunction) > 0 and len(returnedStrings) > 0)
+        
+        App.dj_init()
+        runSystem("cp urls.py urls_bk.py")
+        runSystem("cp views.py views.py")
+
+
+        
+        newFunInView = '''def %(name)s(request):\n    return HttpResponse("%(string)s")\n'''
+        
+        fs = open('views.py', "a") 
+        fs.write(newFunInView % {'name': nameOfFunction, 'string': returnedStrings})
+        fs.close()        
+
+
+
+
+        fs         = open("views.py", "r")
+        viewsLines = fs.readlines()
+        fs.close()
+
+
+        
+        fs       = open("urls.py", "r")
+        urlLines = fs.readlines()
+        fs.close()
+
+        fs       = open("urls.py", "w")
+        
+        for i in urlLines: 
+            if i[0:4] == "url(":
+                pass
+            elif i[0:6] == "#forma":
+                for j in viewsLines:
+                    if j[0:3] == "def":
+                        tempWords = re.findall("def (.+)\(", j)
+                        functionName = tempWords[0]
+                        print functionName
+                        fs.write("url(r\'^%s$', %s),\n"%(functionName, 'views.'+functionName))
+                fs.write(i)        
+            else:
+                fs.write(i)
+        fs.close()
+
+
+        
+b = App()
+b.dj_init()
+
+    
